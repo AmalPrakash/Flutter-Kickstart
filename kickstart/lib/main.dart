@@ -1,56 +1,136 @@
-import 'package:flutter/widgets.dart';
+import 'dart:math';
+import 'package:flappy_search_bar/flappy_search_bar.dart';
+import 'package:flappy_search_bar/scaled_tile.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:kickstart/datasource.dart';
 
+void main() => runApp(MyApp());
 
-void main() {
-  runApp(MaterialApp(
-    home: FAQPage(),
-    theme: ThemeData(
-      primarySwatch: Colors.red,
-    ),
-  ));
-}
-
-class HomePage extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Kickstart Flutter"),
-      ),
-      body: Container(
-        child: Text("grocery app-nu kashtappedunnu.. sahayikkanam"),
-      ),
+    return MaterialApp(
+      home: Home(),
     );
   }
 }
 
-class FAQPage extends StatelessWidget {
+class Post {
+  final String title;
+  final String body;
+
+  Post(this.title, this.body);
+}
+
+class Home extends StatefulWidget {
+  @override
+  _HomeState createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  final SearchBarController<Post> _searchBarController = SearchBarController();
+  bool isReplay = false;
+
+  List<Post> foolist = [
+    Post('one', '1'),
+    Post('two', '2'),
+    Post('three', '3'),
+    Post('four', '4'),
+    Post('five', '5'),
+    Post('six', '6'),
+  ];
+  Future<List<Post>> _getALlPosts(String text) async {
+    List<Post> posts = foolist
+        .where((element) =>
+            element.title.contains(text) || element.body.contains(text))
+        .toList();
+
+    return posts;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('FAQs'),
-      ),
-      body: ListView.builder(
-          itemCount: DataSource.questionAnswers.length,
-          itemBuilder: (context, index) {
-            return ExpansionTile(
-              title: Text(
-                DataSource.questionAnswers[index]['question'],
-                style: TextStyle(fontWeight: FontWeight.bold),
+      body: SafeArea(
+        child: SearchBar<Post>(
+          minimumChars: 1,
+          searchBarPadding: EdgeInsets.symmetric(horizontal: 10),
+          headerPadding: EdgeInsets.symmetric(horizontal: 10),
+          listPadding: EdgeInsets.symmetric(horizontal: 10),
+          onSearch: _getALlPosts,
+          hintText: "search",
+          searchBarController: _searchBarController,
+          placeHolder: Text("placeholder"),
+          cancellationWidget: Text("Cancel"),
+          emptyWidget: Text("empty"),
+          indexedScaledTileBuilder: (int index) =>
+              ScaledTile.count(1, index.isEven ? 2 : 1),
+          header: Row(
+            children: <Widget>[
+              RaisedButton(
+                child: Text("sort"),
+                onPressed: () {
+                  _searchBarController.sortList((Post a, Post b) {
+                    return a.body.compareTo(b.body);
+                  });
+                },
               ),
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text(DataSource.questionAnswers[index]['answer']),
-                )
-              ],
+              RaisedButton(
+                child: Text("Desort"),
+                onPressed: () {
+                  _searchBarController.removeSort();
+                },
+              ),
+              RaisedButton(
+                child: Text("Replay"),
+                onPressed: () {
+                  isReplay = !isReplay;
+                  _searchBarController.replayLastSearch();
+                },
+              ),
+            ],
+          ),
+          onCancelled: () {
+            print("Cancelled triggered");
+          },
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          crossAxisCount: 2,
+          onItemFound: (Post post, int index) {
+            return Container(
+              color: Colors.lightBlue,
+              child: ListTile(
+                title: Text(post.title),
+                isThreeLine: true,
+                subtitle: Text(post.body),
+                onTap: () {
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (context) => Detail()));
+                },
+              ),
             );
-          }),
+          },
+        ),
+      ),
     );
   }
 }
 
+class Detail extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
+            IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            Text("Detail"),
+          ],
+        ),
+      ),
+    );
+  }
+}
